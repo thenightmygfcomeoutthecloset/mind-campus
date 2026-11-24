@@ -1,5 +1,17 @@
+# 环境变量及敏感信息（严禁提交到 GitHub！）
 .env
 .env.local
+.env.*.local
+
+# 依赖与打包缓存
 node_modules/
+.vercel/
+.npm/
+
+# 系统临时文件与日志
 .DS_Store
 Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
