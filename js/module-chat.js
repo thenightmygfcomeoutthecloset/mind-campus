@@ -303,6 +303,14 @@
     messagesEl.appendChild(el);
   }
 
+  // 渲染纯文本的 AI 消息（兼容 store.js 初始欢迎语等只有 content 字段的记录）
+  function renderPlainAssistant(content) {
+    var el = document.createElement('div');
+    el.className = 'mc-bubble mc-ai-bubble';
+    el.textContent = content;
+    messagesEl.appendChild(el);
+  }
+
   function renderAssistantMessage(data) {
     var el = document.createElement('div');
     el.className = 'mc-bubble mc-ai-bubble';
@@ -404,8 +412,10 @@
         } else if (m.role === 'assistant') {
           if (m.isCrisisLocal) {
             renderCrisisTip();
-          } else {
+          } else if (m.reply || m.emotion || (m.steps && m.steps.length)) {
             renderAssistantMessage(m);
+          } else if (m.content) {
+            renderPlainAssistant(m.content);
           }
         }
       });
@@ -455,9 +465,9 @@
 
     // 3. 构造发送给后端的 messages（仅 role + content）
     var payloadMessages = messages
-      .filter(function (m) { return m.role === 'user' || (m.role === 'assistant' && m.reply); })
+      .filter(function (m) { return m.role === 'user' || (m.role === 'assistant' && (m.reply || m.content)); })
       .map(function (m) {
-        return { role: m.role, content: m.role === 'user' ? m.content : m.reply };
+        return { role: m.role, content: m.role === 'user' ? m.content : (m.reply || m.content) };
       });
     payloadMessages.push({ role: 'user', content: text });
 
@@ -592,10 +602,11 @@
       renderAll();
     });
 
-    // 恢复历史对话
+    // 恢复历史对话；若只有初始欢迎语（尚无任何用户消息），则展示本模块自己的欢迎区
     var history = storeGetChatHistory();
     if (Array.isArray(history) && history.length) {
-      messages = history;
+      var hasUserMsg = history.some(function (m) { return m && m.role === 'user'; });
+      messages = hasUserMsg ? history : [];
     }
 
     bindEvents();
